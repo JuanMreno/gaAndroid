@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">GestorAula</string>
+    <string name="user_agent_suffix">GestorAula/1.0</string>
 </resources>

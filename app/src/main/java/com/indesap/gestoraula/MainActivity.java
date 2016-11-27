@@ -6,6 +6,8 @@ import android.net.Uri;
 import android.os.Build;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Base64;
+import android.util.Base64OutputStream;
 import android.util.Log;
 import android.view.View;
 import android.webkit.ConsoleMessage;
@@ -17,11 +19,18 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+
 public class MainActivity extends AppCompatActivity {
 
     WebView webView;
     //String host = "http://10.253.102.245:3000/";
-    String host = "http://192.168.0.5:3000/";
+    String host = "http://192.168.0.8:3000/";
     private ValueCallback<Uri[]> mFilePathCallback;
     private int INPUT_FILE_REQUEST_CODE = 1;
     private String TAG = "MainActivity";
@@ -55,6 +64,11 @@ public class MainActivity extends AppCompatActivity {
         webView.setWebChromeClient(new MyWebChromeClient());
 
         webView.getSettings().setDomStorageEnabled(true);
+        webView.getSettings().setUserAgentString(
+                webView.getSettings().getUserAgentString() +
+                " " +
+                getString(R.string.user_agent_suffix)
+        );
 
         //webView.loadUrl("http://192.168.0.5:3000");
         webView.loadUrl(host);
@@ -133,6 +147,9 @@ public class MainActivity extends AppCompatActivity {
                             Log.d(TAG,"fileExt: " + fileExt);
 
                             if(fileExt.equals(".pdf") || fileExt.equals(".PDF")){
+                                //String base64File = getStringFile(new File(uri.getPath()));
+                                //Log.d(TAG,base64File);
+                                //evaluateJS("javascript: {document.getElementById(\"inpCodFile\").value ='" + base64File + "';};");
                                 results = new Uri[]{uri};
                             }
                             else{
@@ -191,5 +208,40 @@ public class MainActivity extends AppCompatActivity {
             }*/
 
         return;
+    }
+
+    private void evaluateJS(String code) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
+            webView.evaluateJavascript(code, null);
+        } else {
+            webView.loadUrl(code);
+        }
+    }
+
+    public String getStringFile(File f) {
+        InputStream inputStream = null;
+        String encodedFile= "", lastVal;
+        try {
+            inputStream = new FileInputStream(f.getAbsolutePath());
+
+            byte[] buffer = new byte[10240];//specify the size to allow
+            int bytesRead;
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            Base64OutputStream output64 = new Base64OutputStream(output, Base64.DEFAULT);
+
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                output64.write(buffer, 0, bytesRead);
+            }
+            output64.close();
+            encodedFile =  output.toString();
+        }
+        catch (FileNotFoundException e1 ) {
+            e1.printStackTrace();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        lastVal = encodedFile;
+        return lastVal;
     }
 }
