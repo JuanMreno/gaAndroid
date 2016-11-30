@@ -19,21 +19,33 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
 
     WebView webView;
     //String host = "http://10.253.102.245:3000/";
-    String host = "http://192.168.0.8:3000/";
+    String host = "http://192.168.0.67:3000/";
     private ValueCallback<Uri[]> mFilePathCallback;
     private int INPUT_FILE_REQUEST_CODE = 1;
     private String TAG = "MainActivity";
+    private static final Pattern IP_ADDRESS
+            = Pattern.compile(
+            "((25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9])\\.(25[0-5]|2[0-4]"
+                    + "[0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]"
+                    + "[0-9]{2}|[1-9][0-9]|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}"
+                    + "|[1-9][0-9]|[0-9]))");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,8 +82,41 @@ public class MainActivity extends AppCompatActivity {
                 getString(R.string.user_agent_suffix)
         );
 
-        //webView.loadUrl("http://192.168.0.5:3000");
         webView.loadUrl(host);
+
+        StringBuffer echo = new StringBuffer();
+        try {
+            BufferedReader br = new BufferedReader(new FileReader("/proc/net/arp"));
+            String line = "";
+            while((line = br.readLine()) != null) echo.append(line + "\n");
+            br.close();
+
+            Log.d(TAG,echo.toString());
+
+            ArrayList<String> ips = new ArrayList<>();
+
+            String res = echo.toString();
+            Matcher matcher = IP_ADDRESS.matcher(res);
+            while (matcher.find()){
+                Log.d(TAG,"ip: " + matcher.group(1));
+
+                ips.add(matcher.group(1));
+                res = res.replace(matcher.group(1),"");
+                matcher = IP_ADDRESS.matcher(res);
+            }
+
+            if(ips.size() > 0){
+                Log.d(TAG,"IPS found");
+                for(int i=0 ; i < ips.size() ; i++)
+                    Log.w(TAG,ips.get(i));
+            }
+            else{
+                Log.d(TAG,"Servidor no encontrado. Ninguna ip hallada.");
+                Toast.makeText(this,"Servidor no encontrado.",Toast.LENGTH_LONG);
+            }
+        }
+        catch(Exception e) { Log.e(TAG, e.toString()); }
+
     }
 
     private class MyWebViewClient extends WebViewClient {
