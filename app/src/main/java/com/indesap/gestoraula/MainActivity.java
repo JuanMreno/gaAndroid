@@ -1,14 +1,19 @@
 package com.indesap.gestoraula;
 
 import android.app.Activity;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Base64;
 import android.util.Base64OutputStream;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.webkit.ConsoleMessage;
 import android.webkit.JsResult;
@@ -17,7 +22,11 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.EditText;
 import android.widget.Toast;
+
+import com.indesap.gestoraula.shared_preferences.SharedPreferencesManager;
+import com.indesap.gestoraula.web_services.ValidateIpWebServices;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -36,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
 
     WebView webView;
     //String host = "http://10.253.102.245:3000/";
-    String host = "http://192.168.0.67:3000/";
+    String host = "http://192.168.0.101:3000/";
     private ValueCallback<Uri[]> mFilePathCallback;
     private int INPUT_FILE_REQUEST_CODE = 1;
     private String TAG = "MainActivity";
@@ -46,6 +55,10 @@ public class MainActivity extends AppCompatActivity {
                     + "[0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]"
                     + "[0-9]{2}|[1-9][0-9]|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}"
                     + "|[1-9][0-9]|[0-9]))");
+
+    private static final Pattern IP_PATTERN = Pattern.compile(
+            "^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$");
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,8 +95,9 @@ public class MainActivity extends AppCompatActivity {
                 getString(R.string.user_agent_suffix)
         );
 
-        webView.loadUrl(host);
+        checkUrlHost();
 
+        /*
         StringBuffer echo = new StringBuffer();
         try {
             BufferedReader br = new BufferedReader(new FileReader("/proc/net/arp"));
@@ -116,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         catch(Exception e) { Log.e(TAG, e.toString()); }
-
+        */
     }
 
     private class MyWebViewClient extends WebViewClient {
@@ -178,7 +192,6 @@ public class MainActivity extends AppCompatActivity {
 
             Uri[] results = null;
 
-            // Check that the response is a good one
             if (resultCode == Activity.RESULT_OK) {
                 if (data == null) {
                     results = new Uri[]{};
@@ -191,7 +204,7 @@ public class MainActivity extends AppCompatActivity {
                             String fileExt = uri.toString().substring( uri.toString().lastIndexOf("."));
                             Log.d(TAG,"fileExt: " + fileExt);
 
-                            if(fileExt.equals(".pdf") || fileExt.equals(".PDF")){
+                            if(fileExt.equals(".pdf") || fileExt.equals(".PDF") || fileExt.equals(".vplc") || fileExt.equals(".VPLC")){
                                 //String base64File = getStringFile(new File(uri.getPath()));
                                 //Log.d(TAG,base64File);
                                 //evaluateJS("javascript: {document.getElementById(\"inpCodFile\").value ='" + base64File + "';};");
@@ -216,41 +229,34 @@ public class MainActivity extends AppCompatActivity {
             mFilePathCallback.onReceiveValue(results);
             mFilePathCallback = null;
 
-        }/* else if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {
-                if (requestCode != FILECHOOSER_RESULTCODE || mUploadMessage == null) {
-                    super.onActivityResult(requestCode, resultCode, data);
+        } /*else if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {
+            if (requestCode != FILECHOOSER_RESULTCODE || mUploadMessage == null) {
+                super.onActivityResult(requestCode, resultCode, data);
+                return;
+            }
+
+            if (requestCode == FILECHOOSER_RESULTCODE) {
+
+                if (null == this.mUploadMessage) {
                     return;
                 }
 
-                if (requestCode == FILECHOOSER_RESULTCODE) {
-
-                    if (null == this.mUploadMessage) {
-                        return;
-
+                Uri result = null;
+                try {
+                    if (resultCode != RESULT_OK) {
+                        result = null;
+                    } else {
+                        // retrieve from the private variable if the intent is null
+                        result = data == null ? mCapturedImageURI : data.getData();
                     }
-
-                    Uri result = null;
-
-                    try {
-                        if (resultCode != RESULT_OK) {
-
-                            result = null;
-
-                        } else {
-
-                            // retrieve from the private variable if the intent is null
-                            result = data == null ? mCapturedImageURI : data.getData();
-                        }
-                    } catch (Exception e) {
-                        Toast.makeText(getApplicationContext(), "activity :" + e,
-                                Toast.LENGTH_LONG).show();
-                    }
-
-                    mUploadMessage.onReceiveValue(result);
-                    mUploadMessage = null;
-
+                } catch (Exception e) {
+                    Toast.makeText(getApplicationContext(), "activity :" + e,
+                            Toast.LENGTH_LONG).show();
                 }
-            }*/
+                mUploadMessage.onReceiveValue(result);
+                mUploadMessage = null;
+            }
+        }*/
 
         return;
     }
@@ -288,5 +294,80 @@ public class MainActivity extends AppCompatActivity {
         }
         lastVal = encodedFile;
         return lastVal;
+    }
+
+    public void ipAlertDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+        LayoutInflater inflater = getLayoutInflater();
+        View view = inflater.inflate(R.layout.ip_dialog_content, null);
+
+        final EditText editText = (EditText)view.findViewById(R.id.editText);
+        builder
+            .setView(view)
+            .setTitle(R.string.ip_dialog_title)
+            .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int which) {
+                    if(validate(editText.getText().toString())){
+                        String ipAddress = editText.getText().toString();
+                        ValidateIpWebServices validateIpWebServices = new ValidateIpWebServices();
+                        validateIpWebServices.validateIpAddress(MainActivity.this,ipAddress);
+                    }
+                    else{
+                        Toast.makeText(MainActivity.this, R.string.ip_not_val_toast,Toast.LENGTH_LONG).show();
+                    }
+                }
+            })
+            .setOnCancelListener(new DialogInterface.OnCancelListener() {
+                @Override
+                public void onCancel(DialogInterface dialogInterface) {
+                    checkUrlHost();
+                }
+            })
+            .show();
+    }
+
+    public void checkUrlHost() {
+        SharedPreferencesManager sp =
+                new SharedPreferencesManager(
+                        this,
+                        SharedPreferencesManager.URL_HOST
+                );
+
+        if(!sp.getString().equals("null")){
+            ValidateIpWebServices validateIpWebServices = new ValidateIpWebServices();
+            validateIpWebServices.validateHost(MainActivity.this,sp.getString());
+        }
+        else{
+            ipAlertDialog();
+        }
+    }
+
+    public static boolean validate(final String ip) {
+        return IP_PATTERN.matcher(ip).matches();
+    }
+
+    public void loadHost(){
+        SharedPreferencesManager sp =
+                new SharedPreferencesManager(
+                        this,
+                        SharedPreferencesManager.URL_HOST
+                );
+
+        if(!sp.getString().equals("null")){
+            webView.loadUrl(sp.getString());
+        }
+    }
+
+    public void alertDialogStandard(String titulo, String mensaje) {
+        new AlertDialog.Builder(this)
+                .setTitle(titulo)
+                .setMessage(mensaje)
+                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        // continue with delete
+                    }
+                })
+                .show();
     }
 }

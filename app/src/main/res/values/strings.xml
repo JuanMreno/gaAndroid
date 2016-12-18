@@ -1,4 +1,13 @@
 <resources>
-    <string name="app_name">GestorAula</string>
+    <string name="app_name">Gestor de Aula</string>
     <string name="user_agent_suffix">GestorAula/1.0</string>
+
+    <string name="ip_dialog_mns">Ingresa la dirección IP del servidor.</string>
+    <string name="ip_dialog_title">Servidor no encontrado</string>
+    <string name="ip_not_val_toast">Dirección IP no válida, intenta de nuevo</string>
+    <string name="txt_tit_error_net">Error de red</string>
+    <string name="txt_mns_error_net">Valida tu conexión a internet e intenta de nuevo.</string>
+    <string name="looking_for_server_dialog">Buscando servidor...</string>
+    <string name="txt_tit_error_server">Servidor no encontrado</string>
+    <string name="txt_mns_error_server">No se ha podido encontrar el servidor, valida la dirección IP e intenta de nuevo.</string>
 </resources>
