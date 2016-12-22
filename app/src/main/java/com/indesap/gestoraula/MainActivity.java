@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Build;
 import android.support.v7.app.AlertDialog;
@@ -133,52 +134,6 @@ public class MainActivity extends AppCompatActivity {
         */
     }
 
-    private class MyWebViewClient extends WebViewClient {
-        @Override
-        public boolean shouldOverrideUrlLoading(WebView view, String url) {
-            Log.d("WebView",url);
-            if (url.equals(host)) {
-                // This is my web site, so do not override; let my WebView load the page
-                webView.loadUrl(host);
-                return false;
-            }
-            // Otherwise, the link is not for a page on my site, so launch another Activity that handles URLs
-            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-            startActivity(intent);
-            return true;
-        }
-    }
-
-    private class MyWebChromeClient extends WebChromeClient {
-        @Override
-        public boolean onJsAlert(WebView view, String url, String message, JsResult result) {
-            Toast.makeText(getApplicationContext(),message,Toast.LENGTH_LONG).show();
-            result.cancel();
-            return true;
-            //return super.onJsAlert(view, url, message, result);
-        }
-
-        @Override
-        public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
-            Log.d("WebView","onShowFileChooser");
-            //return super.onShowFileChooser(webView, filePathCallback, fileChooserParams);
-            if (mFilePathCallback != null) {
-                mFilePathCallback.onReceiveValue(null);
-            }
-            mFilePathCallback = filePathCallback;
-
-            Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
-            contentSelectionIntent.setType("file/*");
-
-            Intent chooserIntent = new Intent(Intent.ACTION_CHOOSER);
-            chooserIntent.putExtra(Intent.EXTRA_INTENT, contentSelectionIntent);
-
-            startActivityForResult(chooserIntent, INPUT_FILE_REQUEST_CODE);
-
-            return true;
-        }
-    }
-
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         Log.d(TAG,"onActivityResult");
@@ -259,6 +214,57 @@ public class MainActivity extends AppCompatActivity {
         }*/
 
         return;
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig){
+        super.onConfigurationChanged(newConfig);
+    }
+
+    private class MyWebViewClient extends WebViewClient {
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, String url) {
+            Log.d("WebView",url);
+            if (url.equals(host)) {
+                // This is my web site, so do not override; let my WebView load the page
+                webView.loadUrl(host);
+                return false;
+            }
+            // Otherwise, the link is not for a page on my site, so launch another Activity that handles URLs
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            startActivity(intent);
+            return true;
+        }
+    }
+
+    private class MyWebChromeClient extends WebChromeClient {
+        @Override
+        public boolean onJsAlert(WebView view, String url, String message, JsResult result) {
+            Toast.makeText(getApplicationContext(),message,Toast.LENGTH_LONG).show();
+            result.cancel();
+            return true;
+            //return super.onJsAlert(view, url, message, result);
+        }
+
+        @Override
+        public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
+            Log.d("WebView","onShowFileChooser");
+            //return super.onShowFileChooser(webView, filePathCallback, fileChooserParams);
+            if (mFilePathCallback != null) {
+                mFilePathCallback.onReceiveValue(null);
+            }
+            mFilePathCallback = filePathCallback;
+
+            Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
+            contentSelectionIntent.setType("file/*");
+
+            Intent chooserIntent = new Intent(Intent.ACTION_CHOOSER);
+            chooserIntent.putExtra(Intent.EXTRA_INTENT, contentSelectionIntent);
+
+            startActivityForResult(chooserIntent, INPUT_FILE_REQUEST_CODE);
+
+            return true;
+        }
     }
 
     private void evaluateJS(String code) {
